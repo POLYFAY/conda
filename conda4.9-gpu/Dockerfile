@@ -39,7 +39,7 @@ RUN conda config --add channels conda-forge
 
 RUN conda install -c anaconda jupyter -y
 RUN conda install pillow -y
-RUN conda install -c anaconda opencv -y
+RUN conda install -c conda-forge opencv -y
 RUN conda install -c anaconda tensorflow -y
 RUN conda install -c conda-forge keras -y
 RUN conda install -c conda-forge tensorflow-hub -y
