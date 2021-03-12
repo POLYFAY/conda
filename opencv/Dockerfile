@@ -1,45 +1,54 @@
-FROM sadfgh10024/anaconda3:python3.8
+FROM nvidia/cuda:10.2-cudnn8-devel
 
-RUN apt-get update && apt-get upgrade -y &&\
-    # Install build tools, build dependencies and python
-    apt-get install -y \
-        build-essential \
-        cmake \
-        git \
-        wget \
-        unzip \
-        yasm \
-		&& rm -rf /var/lib/apt/lists/*
-ARG OPENCV_VERSION=4.5.0
-RUN cd /opt/ &&\
-    wget https://github.com/opencv/opencv/archive/$OPENCV_VERSION.zip &&\
-    unzip $OPENCV_VERSION.zip &&\
-    rm $OPENCV_VERSION.zip &&\
-    wget https://github.com/opencv/opencv_contrib/archive/$OPENCV_VERSION.zip &&\
-    unzip ${OPENCV_VERSION}.zip &&\
-    rm ${OPENCV_VERSION}.zip &&\
-    mkdir /opt/opencv-${OPENCV_VERSION}/build && cd /opt/opencv-${OPENCV_VERSION}/build &&\
-    cmake \
-		-D CMAKE_BUILD_TYPE=RELEASE \
-        -D OPENCV_EXTRA_MODULES_PATH=/opt/opencv_contrib-${OPENCV_VERSION}/modules \
-		-D PYTHON3_EXECUTABLE=$(which python3.8) \
-		-D PYTHON3_INCLUDE_DIR=$(python3.8 -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())") \
-		-D PYTHON3_PACKAGES_PATH=$(python3.8 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())") \
-		-D CMAKE_INSTALL_PREFIX=/usr/local \
-		-D WITH_CUDA=ON \
-		-D ENABLE_FAST_MATH=1 \
-		-D CUDA_FAST_MATH=1 \
-		-D WITH_CUBLAS=1 \
-		-D WITH_CUDNN=ON \
-		-D OPENCV_DNN_CUDA=ON \
-		-D INSTALL_PYTHON_EXAMPLES=ON \
-		-D OPENCV_ENABLE_NONFREE=ON \
-		-D BUILD_DOCS=OFF \
-		-D BUILD_EXAMPLES=OFF \
-		-D BUILD_PERF_TESTS=OFF \
-		-D BUILD_TESTS=OFF \
-        .. &&\
-	make -j"$(nproc)"
-RUN	make install
-    # Remove OpenCV sources and build folder
-RUN rm -rf /opt/opencv-${OPENCV_VERSION} && rm -rf /opt/opencv_contrib-${OPENCV_VERSION}
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV PATH /opt/conda/bin:$PATH
+
+RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \
+    libglib2.0-0 libxext6 libsm6 libxrender1 \
+    git mercurial subversion
+RUN apt-get upgrade -y
+RUN apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6 -y
+RUN wget http://192.168.1.8/anacondafile/Anaconda3-2020.11-Linux-x86_64.sh -O ~/anaconda.sh
+RUN /bin/bash ~/anaconda.sh -b -p /opt/conda
+RUN rm ~/anaconda.sh
+RUN ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
+RUN echo "conda activate base" >> ~/.bashrc
+
+RUN apt-get install -y curl grep sed dpkg && \
+    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
+    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
+    dpkg -i tini.deb && \
+    rm tini.deb
+RUN apt-get clean
+RUN echo "auto_update_conda: False" >> ~/.condarc
+RUN conda update -n base -c defaults conda
+RUN conda update --all
+
+USER root
+ENV DEBIAN_FRONTEND noninteractive
+
+ENV NOTEBOOK_DIR=/src/notebooks \
+        NOTEBOOK_IP=0.0.0.0 \
+        NOTEBOOK_PORT=8888
+
+RUN conda config --add channels conda-forge
+#RUN conda install -c patricksnape opencv-gpu
+RUN conda install -c anaconda jupyter -y
+RUN conda install pillow -y
+RUN conda install -c anaconda tensorflow -y
+RUN conda install -c conda-forge keras -y
+RUN conda install -c conda-forge tensorflow-hub -y
+RUN conda install pycocotools -y
+RUN conda clean -tipsy
+RUN apt install build-essential -y
+RUN apt-get install manpages-dev -y
+RUN apt-get clean
+RUN pip install pycocotools
+RUN apt-get autoclean
+ENTRYPOINT [ "/usr/bin/tini", "--" ]
+CMD [ "/bin/bash" ]
+CMD jupyter notebook \
+        --notebook-dir=${NOTEBOOK_DIR} \
+        --ip=${NOTEBOOK_IP} \
