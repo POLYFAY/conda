@@ -9,40 +9,21 @@ RUN     apt-get install -y \
         wget \
         unzip \
         yasm \
-		pkg-config \
-		&& rm -rf /var/lib/apt/lists/*
-		libgtk2.0-dev \
-		apt-get install -y \
-        libswscale-dev \
-        libjpeg-dev \
-        libpng-dev \
-        libtiff-dev \
-        libavformat-dev \
-        libpq-dev \
-        libxine2-dev \
-        libglew-dev \
-        libtiff5-dev \
-        zlib1g-dev \
-        libavcodec-dev \
-        libavutil-dev \
-        libpostproc-dev \
-        libeigen3-dev \
-        libtbb-dev \
-		&& rm -rf /var/lib/apt/lists/*
-		libtbb2 \
+	pkg-config \
+	&& rm -rf /var/lib/apt/lists/*
 ARG OPENCV_VERSION=4.5.0
 RUN cd /opt/ &&\
-    wget http://192.168.43.99/opencv/opencv/archive/$OPENCV_VERSION.zip &&\
+    wget https://github.com/opencv/opencv/archive/$OPENCV_VERSION.zip &&\
     unzip $OPENCV_VERSION.zip &&\
     rm $OPENCV_VERSION.zip &&\
-    wget http://192.168.43.99/opencv/opencv_contrib/archive/$OPENCV_VERSION.zip &&\
+    wget https://github.com/opencv/opencv_contrib/archive/$OPENCV_VERSION.zip &&\
     unzip ${OPENCV_VERSION}.zip &&\
     rm ${OPENCV_VERSION}.zip &&\
     mkdir /opt/opencv-${OPENCV_VERSION}/build && cd /opt/opencv-${OPENCV_VERSION}/build 
 RUN cd /opt/opencv-${OPENCV_VERSION}/build && \
     cmake \
 		-D CMAKE_BUILD_TYPE=RELEASE \
-        -D OPENCV_EXTRA_MODULES_PATH=/opt/opencv_contrib-${OPENCV_VERSION}/modules \
+        	-D OPENCV_EXTRA_MODULES_PATH=/opt/opencv_contrib-${OPENCV_VERSION}/modules \
 		-D PYTHON3_EXECUTABLE=$(which python3.8) \
 		-D PYTHON3_INCLUDE_DIR=$(python3.8 -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())") \
 		-D PYTHON3_PACKAGES_PATH=$(python3.8 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())") \
